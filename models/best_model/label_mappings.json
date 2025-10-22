@@ -1,0 +1,28 @@
+{
+  "label_to_id": {
+    "B-bien_phap_chan_doan": 0,
+    "B-bien_phap_dieu_tri": 1,
+    "B-nguyen_nhan_benh": 2,
+    "B-ten_benh": 3,
+    "B-trieu_chung_benh": 4,
+    "I-bien_phap_chan_doan": 5,
+    "I-bien_phap_dieu_tri": 6,
+    "I-nguyen_nhan_benh": 7,
+    "I-ten_benh": 8,
+    "I-trieu_chung_benh": 9,
+    "O": 10
+  },
+  "id_to_label": {
+    "0": "B-bien_phap_chan_doan",
+    "1": "B-bien_phap_dieu_tri",
+    "2": "B-nguyen_nhan_benh",
+    "3": "B-ten_benh",
+    "4": "B-trieu_chung_benh",
+    "5": "I-bien_phap_chan_doan",
+    "6": "I-bien_phap_dieu_tri",
+    "7": "I-nguyen_nhan_benh",
+    "8": "I-ten_benh",
+    "9": "I-trieu_chung_benh",
+    "10": "O"
+  }
+}

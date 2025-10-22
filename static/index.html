@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical NER Tool - PhoBERT vs CRF</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Nhận diện thực thể trong lĩnh vực y tế</h1>
+            <p class="subtitle">So sánh PhoBERT (Deep Learning) và CRF (Machine Learning)</p>
+        </header>
+
+        <div class="model-card" style="margin-bottom: 30px;">
+            <div class="model-header">
+                 <div class="model-title">📝 Nhập văn bản</div>
+            </div>
+            <div class="input-section">
+                <label for="input-shared">Nhập văn bản y tế tại đây:</label>
+                <textarea id="input-shared" placeholder="Ví dụ: Bệnh nhân nhập viện vì đau ngực dữ dội và khó thở..." rows="6"></textarea>
+            </div>
+            <div class="button-group" style="margin-bottom: 0;">
+                <button class="clear-btn" onclick="clearAll()" style="flex: 0.5;">🗑️ Xóa văn bản</button>
+            </div>
+        </div>
+
+        <div class="models-container">
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="model-title">PhoBERT</div>
+                    <div class="model-badge">Deep Learning</div>
+                </div>
+                <div class="button-group">
+                    <button class="analyze-btn" onclick="analyzeText('linear')">🔍 Phân tích (Linear)</button>
+                </div>
+                <div class="results-section" id="results-linear">
+                    <div class="results-title">Kết quả phân tích:</div>
+                    <div id="output-linear" class="loading">Nhấn "Phân tích" để xem kết quả...</div>
+                </div>
+            </div>
+
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="model-title">CRF</div>
+                    <div class="model-badge">Machine Learning</div>
+                </div>
+                <div class="button-group">
+                    <button class="analyze-btn" onclick="analyzeText('crf')">🔍 Phân tích (CRF)</button>
+                </div>
+                <div class="results-section" id="results-crf">
+                    <div class="results-title">Kết quả phân tích:</div>
+                    <div id="output-crf" class="loading">Nhấn "Phân tích" để xem kết quả...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-title">📋 Chú thích các loại thực thể</div>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ffeb3b; border: 1px solid #fbc02d;"></div>
+                    <span>Triệu chứng bệnh</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ff9800; border: 1px solid #f57c00;"></div>
+                    <span>Tên bệnh</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #2196f3; border: 1px solid #1976d2;"></div>
+                    <span>Nguyên nhân bệnh</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #9c27b0; border: 1px solid #7b1fa2;"></div>
+                    <span>Biện pháp chẩn đoán</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e91e63; border: 1px solid #c2185b;"></div>
+                    <span>Biện pháp điều trị</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API URL không đổi
+        const API_URL = 'http://127.0.0.1:8001';
+
+        async function analyzeText(modelType) {
+            const input = document.getElementById('input-shared'); 
+            const text = input.value.trim();
+            const output = document.getElementById(`output-${modelType}`); 
+
+            if (!text) {
+                alert("⚠️ Vui lòng nhập văn bản vào ô 'Nhập văn bản' bên trên.");
+                output.innerHTML = '<div class="loading">Vui lòng nhập văn bản vào ô bên trên.</div>';
+                return;
+            }
+
+            // Xác định endpoint để gọi
+            let endpoint = '';
+            if (modelType === 'linear') {
+                endpoint = '/analyze-linear';
+            } else if (modelType === 'crf') {
+                endpoint = '/analyze-crf'; // <-- GỌI ENDPOINT MỚI
+            } else {
+                return; // Không làm gì nếu modelType lạ
+            }
+
+            output.innerHTML = '<div class="loading">⏳ Đang phân tích...</div>';
+            
+            try {
+                const response = await fetch(API_URL + endpoint, { // <-- Dùng endpoint linh hoạt
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text }), 
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `Lỗi từ server: ${response.statusText}`);
+                }
+
+                const results = await response.json(); 
+                renderResults(results, output); // Hàm renderResults dùng chung cho cả 2
+
+            } catch (error){
+                console.error(`Lỗi khi gọi API (${modelType}):`, error);
+                output.innerHTML = `<div class="loading">❌ Lỗi: Không thể kết nối tới máy chủ AI. (${error.message})</div>`;
+            }
+        }
+
+        // Hàm renderResults không thay đổi, nó hoạt động cho cả 2
+        function renderResults(results, outputElement) {
+            if (!results || results.length === 0 || results.error) {
+                // ... (code giữ nguyên)
+                outputElement.innerHTML = '<div class="loading">Không tìm thấy thực thể.</div>';
+                if(results.error) {
+                    outputElement.innerHTML = `<div class="loading">❌ Lỗi từ server: ${results.error}</div>`;
+                }
+                return;
+            }
+            let html = '';
+            let currentTag = null; 
+            for (const [word, tag] of results) {
+                // ... (code giữ nguyên)
+                const wordWithSpace = word + " "; 
+                if (tag === 'O') {
+                    if (currentTag) {
+                        html += '</span>';
+                        currentTag = null;
+                    }
+                    html += wordWithSpace; 
+                } else {
+                    // Kiểm tra tag hợp lệ (tránh lỗi B- hoặc I- đứng một mình)
+                    if (tag.indexOf('-') === -1) {
+                         html += wordWithSpace; // Coi như là 'O'
+                         continue;
+                    }
+                    const tagType = tag.split('-')[1]; 
+                    const tagPrefix = tag.split('-')[0]; 
+                    if (tagPrefix === 'B') {
+                        if (currentTag) {
+                            html += '</span>';
+                        }
+                        html += `<span class="entity entity-${tagType}">` + wordWithSpace;
+                        currentTag = tagType;
+                    } else if (tagPrefix === 'I') {
+                        if (currentTag === tagType) {
+                            html += wordWithSpace;
+                        } else {
+                            if (currentTag) {
+                                html += '</span>';
+                            }
+                            html += `<span class="entity entity-${tagType}">` + wordWithSpace;
+                            currentTag = tagType;
+                        }
+                    }
+                }
+            }
+            if (currentTag) {
+                html += '</span>';
+            }
+            outputElement.innerHTML = html.trim(); 
+        }
+
+        // Hàm clearAll không thay đổi
+        function clearAll() {
+            document.getElementById('input-shared').value = '';
+            document.getElementById('output-linear').innerHTML = 
+                '<div class="loading">Nhấn "Phân tích" để xem kết quả...</div>';
+            document.getElementById('output-crf').innerHTML = 
+                '<div class="loading">Nhấn "Phân tích" để xem kết quả...</div>';
+        }
+    </script>
+</body>
+</html>
